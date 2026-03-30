@@ -11,32 +11,37 @@ Current projects:
 
 ## Technology Stack
 
-This is a Python project. The `.gitignore` suggests the following tooling is expected:
-- **Package manager**: uv, poetry, or pdm (not yet configured — check `pyproject.toml` once added)
+This is a Python project using **poetry** as the package manager.
 - **Testing**: pytest
 - **Linting/formatting**: ruff
 - **Type checking**: mypy
 
 ## Commands
 
-Once a `pyproject.toml` is in place, typical commands will be (update this section as tooling is established):
-
 ```bash
 # Install dependencies
-uv sync  # or: poetry install / pdm install
+poetry install
 
 # Run tests
-pytest
+poetry run pytest
 
 # Run a single test
-pytest path/to/test_file.py::test_name
+poetry run pytest tests/path/to/test_file.py::test_name
 
 # Lint
-ruff check .
+poetry run ruff check .
 
 # Format
-ruff format .
+poetry run ruff format .
 
 # Type check
-mypy .
+poetry run mypy .
+```
+
+## Git
+
+Always use `--no-gpg-sign` when creating local commits. Always include the following trailer in commit messages:
+
+```
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 ```
