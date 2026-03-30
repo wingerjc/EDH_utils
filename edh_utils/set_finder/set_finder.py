@@ -1,5 +1,15 @@
 import sys
 
+from pydantic import BaseModel
+
+from edh_utils.scryfall import search
+
+
+class CardPrinting(BaseModel):
+    collector_number: str
+    price_usd: str | None
+    name: str
+
 
 def read_card_names(source) -> list[str]:
     """Parse card names from a file-like object.
@@ -20,6 +30,31 @@ def read_card_names(source) -> list[str]:
     return sorted(names)
 
 
+def fetch_card_printings(card_names: list[str]) -> dict[str, list[CardPrinting]]:
+    """Fetch all printings of the given cards from Scryfall.
+
+    Returns a dict mapping set codes to lists of CardPrinting objects,
+    sorted by name within each set.
+    """
+    printings: dict[str, list[CardPrinting]] = {}
+
+    for name in card_names:
+        cards = search(f'!"{name}" unique:prints')
+        for card in cards:
+            set_code = card["set"]
+            printing = CardPrinting(
+                collector_number=card["collector_number"],
+                price_usd=card.get("prices", {}).get("usd"),
+                name=card["name"],
+            )
+            printings.setdefault(set_code, []).append(printing)
+
+    for cards in printings.values():
+        cards.sort(key=lambda c: c.name)
+
+    return printings
+
+
 def set_finder(args):
     """Find and display all sets containing each card in the input list.
 
@@ -32,5 +67,9 @@ def set_finder(args):
             names = read_card_names(f)
     else:
         names = read_card_names(sys.stdin)
-    for name in names:
-        print(name)
+
+    printings = fetch_card_printings(names)
+    for set_code, cards in printings.items():
+        print(f"{set_code}:")
+        for card in cards:
+            print(f"  {card.name} #{card.collector_number} (${card.price_usd})")
