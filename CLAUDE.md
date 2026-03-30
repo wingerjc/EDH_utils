@@ -38,6 +38,17 @@ poetry run ruff format .
 poetry run mypy .
 ```
 
+## README
+
+When commands are added or removed, or when command options are added, removed, or updated, regenerate the affected help text by running:
+
+```bash
+poetry run edh-utils --help
+poetry run edh-utils <subcommand> --help
+```
+
+Update the Usage section in `README.md` with the new output.
+
 ## Git
 
 Always use `--no-gpg-sign` when creating local commits. Always include the following trailer in commit messages:
