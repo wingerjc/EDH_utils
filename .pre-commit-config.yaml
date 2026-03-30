@@ -1,0 +1,14 @@
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Use the latest version tag at the time you set this up
+  rev: v0.15.8 # Example version, check the GitHub repo for the latest tag
+  hooks:
+    - id: ruff-check
+      args: [--fix] # Automatically fix fixable linting issues
+    - id: ruff-format
+-   repo: https://github.com/python-poetry/poetry
+    rev: 2.3.2
+    hooks:
+    -   id: poetry-check
+    -   id: poetry-lock
+    -   id: poetry-install
