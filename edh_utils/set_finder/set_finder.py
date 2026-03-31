@@ -69,7 +69,17 @@ def set_finder(args):
         names = read_card_names(sys.stdin)
 
     printings = fetch_card_printings(names)
-    for set_code, cards in printings.items():
-        print(f"{set_code}:")
-        for card in cards:
-            print(f"  {card.name} #{card.collector_number} (${card.price_usd})")
+
+    if args.output_file:
+        output = open(args.output_file, "w")
+    else:
+        output = sys.stdout
+
+    try:
+        for set_code, cards in printings.items():
+            print(f"{set_code}:", file=output)
+            for card in cards:
+                print(f"  {card.name} #{card.collector_number} (${card.price_usd})", file=output)
+    finally:
+        if args.output_file:
+            output.close()

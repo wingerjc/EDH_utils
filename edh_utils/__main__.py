@@ -11,6 +11,9 @@ def main():
     set_finder_parser.add_argument(
         "-f", "--file", metavar="FILE", help="Input file (default: stdin)"
     )
+    set_finder_parser.add_argument(
+        "-o", "--output-file", metavar="FILE", help="Output file (default: stdout)"
+    )
 
     args = parser.parse_args()
 
