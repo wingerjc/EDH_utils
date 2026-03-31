@@ -38,6 +38,10 @@ poetry run ruff format .
 poetry run mypy .
 ```
 
+## Workflow
+
+Before making any code changes, present a plan and wait for explicit confirmation. Do not begin implementation until the user approves.
+
 ## README
 
 When commands are added or removed, or when command options are added, removed, or updated, always regenerate the affected help text and update `README.md` as part of the same change:
