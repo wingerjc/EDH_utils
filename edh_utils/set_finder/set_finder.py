@@ -7,7 +7,10 @@ import tomllib
 
 from pydantic import BaseModel
 
+from edh_utils.logging import logger
 from edh_utils.scryfall import search
+
+log = logger()
 
 DEFAULT_LOCATION = "Printings"
 
@@ -102,8 +105,11 @@ def fetch_card_printings(
     flat_printings: dict[str, list[CardPrinting]] = {}
 
     for name in card_names:
-        cards = search(f'!"{name}" unique:prints')
-        for card in cards:
+        result = search(f'!"{name}" unique:prints')
+        if result.error:
+            log.error(f"Card not found on Scryfall: {result.error.query!r}")
+            continue
+        for card in result.payload:
             set_code = card["set"]
             printing = CardPrinting(
                 collector_number=card["collector_number"],
