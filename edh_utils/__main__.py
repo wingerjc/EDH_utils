@@ -1,6 +1,7 @@
 import argparse
 
 from edh_utils.set_finder import set_finder
+from edh_utils.set_finder.set_finder import OutputFormat
 
 
 def main():
@@ -13,6 +14,13 @@ def main():
     )
     set_finder_parser.add_argument(
         "-o", "--output-file", metavar="FILE", help="Output file (default: stdout)"
+    )
+    set_finder_parser.add_argument(
+        "--format",
+        choices=list(OutputFormat),
+        default=OutputFormat.TEXT,
+        type=OutputFormat,
+        help="Output format (default: text)",
     )
 
     args = parser.parse_args()

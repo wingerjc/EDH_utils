@@ -40,14 +40,12 @@ poetry run mypy .
 
 ## README
 
-When commands are added or removed, or when command options are added, removed, or updated, regenerate the affected help text by running:
+When commands are added or removed, or when command options are added, removed, or updated, always regenerate the affected help text and update `README.md` as part of the same change:
 
 ```bash
 poetry run edh-utils --help
 poetry run edh-utils <subcommand> --help
 ```
-
-Update the Usage section in `README.md` with the new output.
 
 ## Git
 
