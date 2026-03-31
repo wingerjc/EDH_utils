@@ -46,6 +46,12 @@ def main():
         default=False,
         help="Include basic lands in output (default: excluded)",
     )
+    set_finder_parser.add_argument(
+        "--hide-uncollected",
+        action="store_true",
+        default=False,
+        help="Hide printings not found in the collection file (default: shown)",
+    )
 
     args = parser.parse_args()
 

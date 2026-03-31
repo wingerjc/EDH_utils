@@ -24,8 +24,8 @@ MULTI_SET_PRINTINGS = {
 }
 
 
-def make_args(input_file=None, output_file=None, format=None, hide=None, collection=None, settings=None, price_level=None, include_basics=False):
-    return Namespace(file=input_file, output_file=output_file, format=format, hide=hide, collection=collection, settings=settings, price_level=price_level, include_basics=include_basics)
+def make_args(input_file=None, output_file=None, format=None, hide=None, collection=None, settings=None, price_level=None, include_basics=False, hide_uncollected=False):
+    return Namespace(file=input_file, output_file=output_file, format=format, hide=hide, collection=collection, settings=settings, price_level=price_level, include_basics=include_basics, hide_uncollected=hide_uncollected)
 
 
 @patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Island", "Swamp"])
@@ -280,3 +280,51 @@ def test_cli_include_basics_overrides_settings(mock_settings, mock_read, mock_fe
     set_finder(make_args(include_basics=True, settings="settings.toml"))
     names_passed = mock_fetch.call_args[0][0]
     assert "Swamp" in names_passed
+
+
+# --- --hide-uncollected ---
+
+COLLECTED_AND_UNCOLLECTED = {
+    "binder": {"lea": [CardPrinting(name="Island", collector_number="288", price_usd="2.00")]},
+    DEFAULT_LOCATION: {"m21": [CardPrinting(name="Island", collector_number="267", price_usd="0.50")]},
+}
+
+
+@patch("sys.stdout", new_callable=StringIO)
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Island"])
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings", return_value=COLLECTED_AND_UNCOLLECTED)
+def test_hide_uncollected_removes_default_location(mock_fetch, mock_read, mock_stdout):
+    set_finder(make_args(hide_uncollected=True))
+    output = mock_stdout.getvalue()
+    assert DEFAULT_LOCATION not in output
+    assert "binder" in output
+
+
+@patch("sys.stdout", new_callable=StringIO)
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Island"])
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings", return_value=COLLECTED_AND_UNCOLLECTED)
+def test_hide_uncollected_false_shows_default_location(mock_fetch, mock_read, mock_stdout):
+    set_finder(make_args(hide_uncollected=False))
+    output = mock_stdout.getvalue()
+    assert DEFAULT_LOCATION in output
+    assert "binder" in output
+
+
+@patch("sys.stdout", new_callable=StringIO)
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Island"])
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings", return_value=COLLECTED_AND_UNCOLLECTED)
+@patch("edh_utils.set_finder.set_finder.read_settings", return_value={"hide_uncollected": True})
+def test_settings_hide_uncollected_used_when_cli_not_set(mock_settings, mock_fetch, mock_read, mock_stdout):
+    set_finder(make_args(settings="settings.toml"))
+    output = mock_stdout.getvalue()
+    assert DEFAULT_LOCATION not in output
+
+
+@patch("sys.stdout", new_callable=StringIO)
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Island"])
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings", return_value=COLLECTED_AND_UNCOLLECTED)
+@patch("edh_utils.set_finder.set_finder.read_settings", return_value={"hide_uncollected": False})
+def test_cli_hide_uncollected_overrides_settings(mock_settings, mock_fetch, mock_read, mock_stdout):
+    set_finder(make_args(hide_uncollected=True, settings="settings.toml"))
+    output = mock_stdout.getvalue()
+    assert DEFAULT_LOCATION not in output
