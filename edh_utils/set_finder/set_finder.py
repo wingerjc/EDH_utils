@@ -13,6 +13,7 @@ from edh_utils.scryfall import search
 log = logger()
 
 DEFAULT_LOCATION = "Printings"
+BASIC_LANDS = frozenset({"plains", "island", "swamp", "mountain", "forest"})
 
 
 class OutputFormat(str, enum.Enum):
@@ -243,6 +244,13 @@ def set_finder(args):
             names = read_card_names(f)
     else:
         names = read_card_names(sys.stdin)
+
+    include_basics = args.include_basics or settings.get("include_basics", False)
+    if not include_basics:
+        filtered = [n for n in names if n.lower() in BASIC_LANDS]
+        for name in filtered:
+            log.info(f"Skipping basic land: {name!r}")
+        names = [n for n in names if n.lower() not in BASIC_LANDS]
 
     set_locations = read_collection(collection) if collection else None
     grouped = fetch_card_printings(names, set_locations)

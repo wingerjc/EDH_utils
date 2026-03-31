@@ -17,7 +17,7 @@ options:
 
 usage: edh-utils set-finder [-h] [-f FILE] [-o FILE] [-s FILE] [-p PRICES]
                             [-c FILE] [--hide SETS]
-                            [--format {text,json,csv,md}]
+                            [--format {text,json,csv,md}] [--include-basics]
 
 options:
   -h, --help            show this help message and exit
@@ -34,6 +34,7 @@ options:
                         output
   --format {text,json,csv,md}
                         Output format (default: text)
+  --include-basics      Include basic lands in output (default: excluded)
 ```
 
 ## set-finder
@@ -53,4 +54,5 @@ hide = ["lea", "usg"]
 collection = "path/to/my_collection.json"
 format = "text"
 price_level = [2.0, 5.0]
+include_basics = false
 ```

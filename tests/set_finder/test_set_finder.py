@@ -3,7 +3,7 @@ from argparse import Namespace
 from io import StringIO
 from unittest.mock import MagicMock, patch
 
-from edh_utils.set_finder.set_finder import CardPrinting, DEFAULT_LOCATION, OutputFormat, _sort_grouped, set_finder
+from edh_utils.set_finder.set_finder import BASIC_LANDS, CardPrinting, DEFAULT_LOCATION, OutputFormat, _sort_grouped, set_finder
 
 
 PRINTINGS = {
@@ -24,8 +24,8 @@ MULTI_SET_PRINTINGS = {
 }
 
 
-def make_args(input_file=None, output_file=None, format=None, hide=None, collection=None, settings=None, price_level=None):
-    return Namespace(file=input_file, output_file=output_file, format=format, hide=hide, collection=collection, settings=settings, price_level=price_level)
+def make_args(input_file=None, output_file=None, format=None, hide=None, collection=None, settings=None, price_level=None, include_basics=False):
+    return Namespace(file=input_file, output_file=output_file, format=format, hide=hide, collection=collection, settings=settings, price_level=price_level, include_basics=include_basics)
 
 
 @patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Island", "Swamp"])
@@ -224,3 +224,59 @@ def test_sort_grouped_only_default_location():
 
 def test_sort_grouped_empty():
     assert _sort_grouped({}) == {}
+
+
+# --- --include-basics ---
+
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings")
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Swamp", "Opt"])
+def test_basics_excluded_by_default(mock_read, mock_fetch):
+    mock_fetch.return_value = {}
+    set_finder(make_args())
+    names_passed = mock_fetch.call_args[0][0]
+    assert "Swamp" not in names_passed
+    assert "Opt" in names_passed
+
+
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings")
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Swamp", "Opt"])
+def test_basics_included_with_flag(mock_read, mock_fetch):
+    mock_fetch.return_value = {}
+    set_finder(make_args(include_basics=True))
+    names_passed = mock_fetch.call_args[0][0]
+    assert "Swamp" in names_passed
+    assert "Opt" in names_passed
+
+
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings")
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["SWAMP", "Forest", "plains"])
+def test_basics_excluded_case_insensitive(mock_read, mock_fetch):
+    mock_fetch.return_value = {}
+    set_finder(make_args())
+    names_passed = mock_fetch.call_args[0][0]
+    assert names_passed == []
+
+
+def test_basic_lands_constant_contains_five_classics():
+    assert BASIC_LANDS == {"plains", "island", "swamp", "mountain", "forest"}
+
+
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings")
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Swamp", "Opt"])
+@patch("edh_utils.set_finder.set_finder.read_settings", return_value={"include_basics": True})
+def test_settings_include_basics_used_when_cli_not_set(mock_settings, mock_read, mock_fetch):
+    mock_fetch.return_value = {}
+    set_finder(make_args(settings="settings.toml"))
+    names_passed = mock_fetch.call_args[0][0]
+    assert "Swamp" in names_passed
+    assert "Opt" in names_passed
+
+
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings")
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Swamp", "Opt"])
+@patch("edh_utils.set_finder.set_finder.read_settings", return_value={"include_basics": False})
+def test_cli_include_basics_overrides_settings(mock_settings, mock_read, mock_fetch):
+    mock_fetch.return_value = {}
+    set_finder(make_args(include_basics=True, settings="settings.toml"))
+    names_passed = mock_fetch.call_args[0][0]
+    assert "Swamp" in names_passed
