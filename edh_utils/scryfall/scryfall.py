@@ -2,7 +2,11 @@ import time
 
 import requests
 
+from edh_utils.logging import logger
+
 SEARCH_URL = "https://api.scryfall.com/cards/search"
+
+log = logger()
 
 
 def search(query: str) -> list[dict]:
@@ -14,8 +18,11 @@ def search(query: str) -> list[dict]:
     results = []
     url = SEARCH_URL
     params: dict | None = {"q": query, "format": "json"}
+    page = 0
 
     while url:
+        page += 1
+        log.debug(f"Searching Scryfall: query={query!r} page={page}")
         response = requests.get(url, params=params)
         response.raise_for_status()
         time.sleep(0.1)
@@ -26,4 +33,5 @@ def search(query: str) -> list[dict]:
         url = data.get("next_page")
         params = None  # next_page URL already includes query params
 
+    log.debug(f"Scryfall search complete: query={query!r} pages={page} total_results={len(results)}")
     return results
