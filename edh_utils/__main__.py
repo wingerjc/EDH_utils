@@ -40,6 +40,12 @@ def main():
         type=OutputFormat,
         help="Output format (default: text)",
     )
+    set_finder_parser.add_argument(
+        "--include-basics",
+        action="store_true",
+        default=False,
+        help="Include basic lands in output (default: excluded)",
+    )
 
     args = parser.parse_args()
 
