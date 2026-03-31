@@ -10,7 +10,7 @@ def _create_logger() -> logging.Logger:
     log.setLevel(getattr(logging, level, logging.INFO))
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter(
-        fmt="%(asctime)s | %(levelname)s | %(name)s @ %(funcName)s:%(lineno)d | %(message)s",
+        fmt="%(asctime)s | %(levelname)s | %(funcName)s @ %(filename)s:%(lineno)d | %(message)s",
         datefmt="%Y/%m/%d %H:%M:%S",
     ))
     log.addHandler(handler)
