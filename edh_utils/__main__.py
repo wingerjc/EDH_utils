@@ -19,6 +19,12 @@ def main():
         "-s", "--settings", metavar="FILE", help="TOML settings file"
     )
     set_finder_parser.add_argument(
+        "-p", "--price-level",
+        metavar="PRICES",
+        default=None,
+        help="Comma-separated price thresholds for dollar-sign indicators",
+    )
+    set_finder_parser.add_argument(
         "-c", "--collection", metavar="FILE", help="JSON file mapping locations to set codes"
     )
     set_finder_parser.add_argument(
