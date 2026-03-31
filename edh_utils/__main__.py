@@ -16,6 +16,12 @@ def main():
         "-o", "--output-file", metavar="FILE", help="Output file (default: stdout)"
     )
     set_finder_parser.add_argument(
+        "--hide",
+        metavar="SETS",
+        default=None,
+        help="Comma-separated list of set codes to exclude from output",
+    )
+    set_finder_parser.add_argument(
         "--format",
         choices=list(OutputFormat),
         default=OutputFormat.TEXT,

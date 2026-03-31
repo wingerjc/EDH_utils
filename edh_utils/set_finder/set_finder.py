@@ -122,6 +122,10 @@ def set_finder(args):
 
     printings = fetch_card_printings(names)
 
+    if args.hide:
+        hidden = {code.strip() for code in args.hide.split(",")}
+        printings = {k: v for k, v in printings.items() if k not in hidden}
+
     if args.output_file:
         output = open(args.output_file, "w")
     else:

@@ -14,8 +14,15 @@ PRINTINGS = {
 }
 
 
-def make_args(input_file=None, output_file=None, format=OutputFormat.TEXT):
-    return Namespace(file=input_file, output_file=output_file, format=format)
+MULTI_SET_PRINTINGS = {
+    "lea": [CardPrinting(name="Island", collector_number="288", price_usd="2.00")],
+    "m21": [CardPrinting(name="Island", collector_number="267", price_usd="0.50")],
+    "znr": [CardPrinting(name="Island", collector_number="271", price_usd="0.25")],
+}
+
+
+def make_args(input_file=None, output_file=None, format=OutputFormat.TEXT, hide=None):
+    return Namespace(file=input_file, output_file=output_file, format=format, hide=hide)
 
 
 @patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Island", "Swamp"])
@@ -80,3 +87,36 @@ def test_format_md(mock_fetch, mock_read, mock_stdout):
         "  * Island, 288, 2.00\n"
         "  * Swamp, 294, 1.00\n"
     )
+
+
+@patch("sys.stdout", new_callable=StringIO)
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Island"])
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings", return_value=MULTI_SET_PRINTINGS)
+def test_hide_single_set(mock_fetch, mock_read, mock_stdout):
+    set_finder(make_args(hide="lea"))
+    output = mock_stdout.getvalue()
+    assert "lea" not in output
+    assert "m21" in output
+    assert "znr" in output
+
+
+@patch("sys.stdout", new_callable=StringIO)
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Island"])
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings", return_value=MULTI_SET_PRINTINGS)
+def test_hide_multiple_sets(mock_fetch, mock_read, mock_stdout):
+    set_finder(make_args(hide="lea,m21"))
+    output = mock_stdout.getvalue()
+    assert "lea" not in output
+    assert "m21" not in output
+    assert "znr" in output
+
+
+@patch("sys.stdout", new_callable=StringIO)
+@patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Island"])
+@patch("edh_utils.set_finder.set_finder.fetch_card_printings", return_value=MULTI_SET_PRINTINGS)
+def test_hide_none_shows_all_sets(mock_fetch, mock_read, mock_stdout):
+    set_finder(make_args(hide=None))
+    output = mock_stdout.getvalue()
+    assert "lea" in output
+    assert "m21" in output
+    assert "znr" in output
