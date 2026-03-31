@@ -8,6 +8,8 @@ from pydantic import BaseModel
 
 from edh_utils.scryfall import search
 
+DEFAULT_LOCATION = "Printings"
+
 
 class OutputFormat(str, enum.Enum):
     TEXT = "text"
@@ -44,13 +46,32 @@ def read_card_names(source) -> list[str]:
     return sorted(names)
 
 
-def fetch_card_printings(card_names: list[str]) -> dict[str, list[CardPrinting]]:
+def read_collection(path: str) -> dict[str, list[str]]:
+    """Read a collection file and invert it to set_code -> [locations].
+
+    The file is a JSON map of location -> [set_codes].
+    Returns an inverted map of set_code -> [locations].
+    """
+    with open(path) as f:
+        data = json.load(f)
+    inverted: dict[str, list[str]] = {}
+    for location, set_codes in data.items():
+        for set_code in set_codes:
+            inverted.setdefault(set_code, []).append(location)
+    return inverted
+
+
+def fetch_card_printings(
+    card_names: list[str],
+    set_locations: dict[str, list[str]] | None = None,
+) -> dict[str, dict[str, list[CardPrinting]]]:
     """Fetch all printings of the given cards from Scryfall.
 
-    Returns a dict mapping set codes to lists of CardPrinting objects,
-    sorted by name within each set.
+    Returns a dict mapping location -> set_code -> list of CardPrinting objects,
+    sorted by name within each set. Sets not found in set_locations are grouped
+    under DEFAULT_LOCATION. Sets in multiple locations appear under each.
     """
-    printings: dict[str, list[CardPrinting]] = {}
+    flat_printings: dict[str, list[CardPrinting]] = {}
 
     for name in card_names:
         cards = search(f'!"{name}" unique:prints')
@@ -61,42 +82,61 @@ def fetch_card_printings(card_names: list[str]) -> dict[str, list[CardPrinting]]
                 price_usd=card.get("prices", {}).get("usd"),
                 name=card["name"],
             )
-            printings.setdefault(set_code, []).append(printing)
+            flat_printings.setdefault(set_code, []).append(printing)
 
-    for cards in printings.values():
+    for cards in flat_printings.values():
         cards.sort(key=lambda c: c.name)
 
-    return printings
+    grouped: dict[str, dict[str, list[CardPrinting]]] = {}
+    for set_code, cards in flat_printings.items():
+        locations = (
+            set_locations.get(set_code, [DEFAULT_LOCATION])
+            if set_locations
+            else [DEFAULT_LOCATION]
+        )
+        for location in locations:
+            grouped.setdefault(location, {})[set_code] = cards
+
+    return grouped
 
 
-def _format_text(printings: dict[str, list[CardPrinting]], output: io.IOBase) -> None:
-    for set_code, cards in printings.items():
-        print(f"{set_code}:", file=output)
-        for card in cards:
-            print(f"  {card.name} #{card.collector_number} (${card.price_usd})", file=output)
+def _format_text(grouped: dict[str, dict[str, list[CardPrinting]]], output: io.IOBase) -> None:
+    for location, printings in grouped.items():
+        print(f"{location}:", file=output)
+        for set_code, cards in printings.items():
+            print(f"  {set_code}:", file=output)
+            for card in cards:
+                print(f"    {card.name} #{card.collector_number} (${card.price_usd})", file=output)
 
 
-def _format_json(printings: dict[str, list[CardPrinting]], output: io.IOBase) -> None:
+def _format_json(grouped: dict[str, dict[str, list[CardPrinting]]], output: io.IOBase) -> None:
     data = {
-        set_code: [card.model_dump() for card in cards]
-        for set_code, cards in printings.items()
+        location: {
+            set_code: [card.model_dump() for card in cards]
+            for set_code, cards in printings.items()
+        }
+        for location, printings in grouped.items()
     }
     print(json.dumps(data, indent=2), file=output)
 
 
-def _format_csv(printings: dict[str, list[CardPrinting]], output: io.IOBase) -> None:
+def _format_csv(grouped: dict[str, dict[str, list[CardPrinting]]], output: io.IOBase) -> None:
     writer = csv.writer(output)
-    writer.writerow(["set", "collector_number", "name", "price_usd"])
-    for set_code, cards in printings.items():
-        for card in cards:
-            writer.writerow([set_code, card.collector_number, card.name, card.price_usd])
+    writer.writerow(["set", "collector_number", "name", "price_usd", "location"])
+    for location, printings in grouped.items():
+        loc_display = "unknown" if location == DEFAULT_LOCATION else location
+        for set_code, cards in printings.items():
+            for card in cards:
+                writer.writerow([set_code, card.collector_number, card.name, card.price_usd, loc_display])
 
 
-def _format_md(printings: dict[str, list[CardPrinting]], output: io.IOBase) -> None:
-    for set_code, cards in printings.items():
-        print(f"* {set_code}", file=output)
-        for card in cards:
-            print(f"  * {card.name}, {card.collector_number}, {card.price_usd}", file=output)
+def _format_md(grouped: dict[str, dict[str, list[CardPrinting]]], output: io.IOBase) -> None:
+    for location, printings in grouped.items():
+        print(f"* {location}", file=output)
+        for set_code, cards in printings.items():
+            print(f"  * {set_code}", file=output)
+            for card in cards:
+                print(f"    * {card.name}, {card.collector_number}, {card.price_usd}", file=output)
 
 
 _FORMATTERS = {
@@ -120,11 +160,16 @@ def set_finder(args):
     else:
         names = read_card_names(sys.stdin)
 
-    printings = fetch_card_printings(names)
+    set_locations = read_collection(args.collection) if args.collection else None
+    grouped = fetch_card_printings(names, set_locations)
 
     if args.hide:
         hidden = {code.strip() for code in args.hide.split(",")}
-        printings = {k: v for k, v in printings.items() if k not in hidden}
+        grouped = {
+            location: {k: v for k, v in sets.items() if k not in hidden}
+            for location, sets in grouped.items()
+        }
+        grouped = {loc: sets for loc, sets in grouped.items() if sets}
 
     if args.output_file:
         output = open(args.output_file, "w")
@@ -132,7 +177,7 @@ def set_finder(args):
         output = sys.stdout
 
     try:
-        _FORMATTERS[args.format](printings, output)
+        _FORMATTERS[args.format](grouped, output)
     finally:
         if args.output_file:
             output.close()

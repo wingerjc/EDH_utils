@@ -16,6 +16,9 @@ def main():
         "-o", "--output-file", metavar="FILE", help="Output file (default: stdout)"
     )
     set_finder_parser.add_argument(
+        "-c", "--collection", metavar="FILE", help="JSON file mapping locations to set codes"
+    )
+    set_finder_parser.add_argument(
         "--hide",
         metavar="SETS",
         default=None,
