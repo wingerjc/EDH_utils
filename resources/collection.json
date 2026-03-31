@@ -1,0 +1,14 @@
+{
+  "A1": ["dgm", "dis", "gpt", "grn", "gtc", "rav", "rna", "rtr", "stx"],
+  "A2": ["bfz", "ogw", "tmp", "znr"],
+  "A3": ["bng", "jou", "neo", "thb"],
+  "A4": ["dka", "emn", "isd", "khm", "mid", "soi", "vow"],
+  "B1": ["cn2", "cns", "iko", "tsr"],
+  "B2": ["aer", "bro", "eld", "kld"],
+  "B3": ["10th", "jmp", "m11", "m12", "m13", "m14", "m15", "m19", "m20", "m21", "ori", "tor"],
+  "B4": ["akh", "dmr", "dmu", "dom", "hou", "mom", "one", "war"],
+  "C1": ["ltr", "snc"],
+  "C2": ["dtk", "frf", "mh2", "rix", "xln"],
+  "C3": ["2x2", "2xm", "afr", "clb", "ema", "ima", "mh1", "woe"],
+  "C4": ["cmm", "cmr"]
+}

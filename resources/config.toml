@@ -1,0 +1,5 @@
+# hide noisy reprints.
+hide = ["sld", "plst"]
+collection = "resources/collection.json"
+format = "md"
+price_level = [2.0, 7.0]
