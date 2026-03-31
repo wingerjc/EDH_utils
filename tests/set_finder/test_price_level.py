@@ -27,7 +27,7 @@ PRINTINGS = {
 def make_args(**kwargs):
     defaults = dict(
         file=None, output_file=None, format=None, hide=None,
-        collection=None, settings=None, price_level=None, include_basics=False,
+        collection=None, settings=None, price_level=None, include_basics=False, hide_uncollected=False,
     )
     defaults.update(kwargs)
     return Namespace(**defaults)

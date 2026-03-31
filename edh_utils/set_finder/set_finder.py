@@ -262,6 +262,10 @@ def set_finder(args):
         }
         grouped = {loc: sets for loc, sets in grouped.items() if sets}
 
+    hide_uncollected = args.hide_uncollected or settings.get("hide_uncollected", False)
+    if hide_uncollected:
+        grouped = {k: v for k, v in grouped.items() if k != DEFAULT_LOCATION}
+
     if args.output_file:
         output = open(args.output_file, "w")
     else:

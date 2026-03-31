@@ -18,6 +18,7 @@ options:
 usage: edh-utils set-finder [-h] [-f FILE] [-o FILE] [-s FILE] [-p PRICES]
                             [-c FILE] [--hide SETS]
                             [--format {text,json,csv,md}] [--include-basics]
+                            [--hide-uncollected]
 
 options:
   -h, --help            show this help message and exit
@@ -35,6 +36,8 @@ options:
   --format {text,json,csv,md}
                         Output format (default: text)
   --include-basics      Include basic lands in output (default: excluded)
+  --hide-uncollected    Hide printings not found in the collection file
+                        (default: shown)
 ```
 
 ## set-finder
@@ -55,4 +58,5 @@ collection = "path/to/my_collection.json"
 format = "text"
 price_level = [2.0, 5.0]
 include_basics = false
+hide_uncollected = false
 ```
