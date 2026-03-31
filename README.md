@@ -15,9 +15,11 @@ positional arguments:
 options:
   -h, --help    show this help message and exit
 
-usage: edh-utils set-finder [-h] [-f FILE]
+usage: edh-utils set-finder [-h] [-f FILE] [-o FILE]
 
 options:
-  -h, --help       show this help message and exit
-  -f, --file FILE  Input file (default: stdin)
+  -h, --help            show this help message and exit
+  -f, --file FILE       Input file (default: stdin)
+  -o, --output-file FILE
+                        Output file (default: stdout)
 ```
