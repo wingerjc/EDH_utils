@@ -3,6 +3,7 @@ import enum
 import io
 import json
 import sys
+import tomllib
 
 from pydantic import BaseModel
 
@@ -44,6 +45,15 @@ def read_card_names(source) -> list[str]:
         else:
             names.add(line)
     return sorted(names)
+
+
+def read_settings(path: str) -> dict:
+    """Read a TOML settings file and return its contents as a dict.
+
+    Supported keys: hide (list of set codes), collection (file path), format (output format).
+    """
+    with open(path, "rb") as f:
+        return tomllib.load(f)
 
 
 def read_collection(path: str) -> dict[str, list[str]]:
@@ -154,17 +164,28 @@ def set_finder(args):
     card prints the sets it appears in — making it easy to identify which
     sets can supply every card needed for a deck or cube.
     """
+    settings = read_settings(args.settings) if args.settings else {}
+
+    # Merge hide: union of CLI set codes and settings list
+    hidden: set[str] = set()
+    if args.hide:
+        hidden.update(code.strip() for code in args.hide.split(","))
+    hidden.update(settings.get("hide", []))
+
+    # collection and format: CLI overrides settings, then fall back to default
+    collection = args.collection or settings.get("collection")
+    fmt = args.format or (OutputFormat(settings["format"]) if "format" in settings else OutputFormat.TEXT)
+
     if args.file:
         with open(args.file) as f:
             names = read_card_names(f)
     else:
         names = read_card_names(sys.stdin)
 
-    set_locations = read_collection(args.collection) if args.collection else None
+    set_locations = read_collection(collection) if collection else None
     grouped = fetch_card_printings(names, set_locations)
 
-    if args.hide:
-        hidden = {code.strip() for code in args.hide.split(",")}
+    if hidden:
         grouped = {
             location: {k: v for k, v in sets.items() if k not in hidden}
             for location, sets in grouped.items()
@@ -177,7 +198,7 @@ def set_finder(args):
         output = sys.stdout
 
     try:
-        _FORMATTERS[args.format](grouped, output)
+        _FORMATTERS[fmt](grouped, output)
     finally:
         if args.output_file:
             output.close()
