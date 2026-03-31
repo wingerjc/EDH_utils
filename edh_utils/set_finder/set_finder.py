@@ -50,7 +50,8 @@ def read_card_names(source) -> list[str]:
 def read_settings(path: str) -> dict:
     """Read a TOML settings file and return its contents as a dict.
 
-    Supported keys: hide (list of set codes), collection (file path), format (output format).
+    Supported keys: hide (list of set codes), collection (file path),
+    format (output format), price_level (list of price thresholds).
     """
     with open(path, "rb") as f:
         return tomllib.load(f)
@@ -69,6 +70,23 @@ def read_collection(path: str) -> dict[str, list[str]]:
         for set_code in set_codes:
             inverted.setdefault(set_code, []).append(location)
     return inverted
+
+
+def parse_price_levels(raw: str) -> list[float]:
+    """Parse a comma-separated string of price thresholds into a sorted list of floats."""
+    return sorted(float(p.strip()) for p in raw.split(","))
+
+
+def price_signs(price_usd: str | None, levels: list[float]) -> str:
+    """Return a string of '$' characters based on how many price thresholds the card meets.
+
+    The count equals the number of thresholds the price is greater than or equal to.
+    Returns an empty string if price_usd is None or no thresholds are met.
+    """
+    if price_usd is None or not levels:
+        return ""
+    price = float(price_usd)
+    return "".join(["$" for level in levels if price >= level])
 
 
 def fetch_card_printings(
@@ -110,16 +128,26 @@ def fetch_card_printings(
     return grouped
 
 
-def _format_text(grouped: dict[str, dict[str, list[CardPrinting]]], output: io.IOBase) -> None:
+def _format_text(
+    grouped: dict[str, dict[str, list[CardPrinting]]],
+    output: io.IOBase,
+    price_levels: list[float],
+) -> None:
     for location, printings in grouped.items():
         print(f"{location}:", file=output)
         for set_code, cards in printings.items():
             print(f"  {set_code}:", file=output)
             for card in cards:
-                print(f"    {card.name} #{card.collector_number} (${card.price_usd})", file=output)
+                signs = price_signs(card.price_usd, price_levels)
+                suffix = f" {signs}" if signs else ""
+                print(f"    {card.name} #{card.collector_number} (${card.price_usd}){suffix}", file=output)
 
 
-def _format_json(grouped: dict[str, dict[str, list[CardPrinting]]], output: io.IOBase) -> None:
+def _format_json(
+    grouped: dict[str, dict[str, list[CardPrinting]]],
+    output: io.IOBase,
+    price_levels: list[float],
+) -> None:
     data = {
         location: {
             set_code: [card.model_dump() for card in cards]
@@ -130,7 +158,11 @@ def _format_json(grouped: dict[str, dict[str, list[CardPrinting]]], output: io.I
     print(json.dumps(data, indent=2), file=output)
 
 
-def _format_csv(grouped: dict[str, dict[str, list[CardPrinting]]], output: io.IOBase) -> None:
+def _format_csv(
+    grouped: dict[str, dict[str, list[CardPrinting]]],
+    output: io.IOBase,
+    price_levels: list[float],
+) -> None:
     writer = csv.writer(output)
     writer.writerow(["set", "collector_number", "name", "price_usd", "location"])
     for location, printings in grouped.items():
@@ -140,13 +172,21 @@ def _format_csv(grouped: dict[str, dict[str, list[CardPrinting]]], output: io.IO
                 writer.writerow([set_code, card.collector_number, card.name, card.price_usd, loc_display])
 
 
-def _format_md(grouped: dict[str, dict[str, list[CardPrinting]]], output: io.IOBase) -> None:
+def _format_md(
+    grouped: dict[str, dict[str, list[CardPrinting]]],
+    output: io.IOBase,
+    price_levels: list[float],
+) -> None:
     for location, printings in grouped.items():
         print(f"* {location}", file=output)
         for set_code, cards in printings.items():
             print(f"  * {set_code}", file=output)
             for card in cards:
-                print(f"    * {card.name}, {card.collector_number}, {card.price_usd}", file=output)
+                signs = price_signs(card.price_usd, price_levels)
+                card_info = f"{card.name}, {card.collector_number}, {card.price_usd}{' ' + signs if signs else ''}"
+                if signs:
+                    card_info = f"**{card_info}**"
+                print(f"    * {card_info}", file=output)
 
 
 _FORMATTERS = {
@@ -172,9 +212,15 @@ def set_finder(args):
         hidden.update(code.strip() for code in args.hide.split(","))
     hidden.update(settings.get("hide", []))
 
-    # collection and format: CLI overrides settings, then fall back to default
+    # collection, format, price_level: CLI overrides settings, then fall back to defaults
     collection = args.collection or settings.get("collection")
     fmt = args.format or (OutputFormat(settings["format"]) if "format" in settings else OutputFormat.TEXT)
+    if args.price_level:
+        price_levels = parse_price_levels(args.price_level)
+    elif "price_level" in settings:
+        price_levels = sorted(float(p) for p in settings["price_level"])
+    else:
+        price_levels = []
 
     if args.file:
         with open(args.file) as f:
@@ -198,7 +244,7 @@ def set_finder(args):
         output = sys.stdout
 
     try:
-        _FORMATTERS[fmt](grouped, output)
+        _FORMATTERS[fmt](grouped, output, price_levels)
     finally:
         if args.output_file:
             output.close()

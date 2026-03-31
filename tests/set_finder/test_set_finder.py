@@ -24,8 +24,8 @@ MULTI_SET_PRINTINGS = {
 }
 
 
-def make_args(input_file=None, output_file=None, format=None, hide=None, collection=None, settings=None):
-    return Namespace(file=input_file, output_file=output_file, format=format, hide=hide, collection=collection, settings=settings)
+def make_args(input_file=None, output_file=None, format=None, hide=None, collection=None, settings=None, price_level=None):
+    return Namespace(file=input_file, output_file=output_file, format=format, hide=hide, collection=collection, settings=settings, price_level=price_level)
 
 
 @patch("edh_utils.set_finder.set_finder.read_card_names", return_value=["Island", "Swamp"])

@@ -15,8 +15,9 @@ positional arguments:
 options:
   -h, --help    show this help message and exit
 
-usage: edh-utils set-finder [-h] [-f FILE] [-o FILE] [-s FILE] [-c FILE]
-                            [--hide SETS] [--format {text,json,csv,md}]
+usage: edh-utils set-finder [-h] [-f FILE] [-o FILE] [-s FILE] [-p PRICES]
+                            [-c FILE] [--hide SETS]
+                            [--format {text,json,csv,md}]
 
 options:
   -h, --help            show this help message and exit
@@ -24,6 +25,9 @@ options:
   -o, --output-file FILE
                         Output file (default: stdout)
   -s, --settings FILE   TOML settings file
+  -p, --price-level PRICES
+                        Comma-separated price thresholds for dollar-sign
+                        indicators
   -c, --collection FILE
                         JSON file mapping locations to set codes
   --hide SETS           Comma-separated list of set codes to exclude from
@@ -44,7 +48,9 @@ merged).
 Example `settings.toml`:
 
 ```toml
+# All settings are optional.
 hide = ["lea", "usg"]
 collection = "path/to/my_collection.json"
 format = "text"
+price_level = [2.0, 5.0]
 ```
