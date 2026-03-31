@@ -16,10 +16,13 @@ options:
   -h, --help    show this help message and exit
 
 usage: edh-utils set-finder [-h] [-f FILE] [-o FILE]
+                            [--format {text,json,csv,md}]
 
 options:
   -h, --help            show this help message and exit
   -f, --file FILE       Input file (default: stdin)
   -o, --output-file FILE
                         Output file (default: stdout)
+  --format {text,json,csv,md}
+                        Output format (default: text)
 ```

@@ -1,8 +1,22 @@
+import csv
+import enum
+import io
+import json
 import sys
 
 from pydantic import BaseModel
 
 from edh_utils.scryfall import search
+
+
+class OutputFormat(str, enum.Enum):
+    TEXT = "text"
+    JSON = "json"
+    CSV = "csv"
+    MD = "md"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class CardPrinting(BaseModel):
@@ -55,6 +69,44 @@ def fetch_card_printings(card_names: list[str]) -> dict[str, list[CardPrinting]]
     return printings
 
 
+def _format_text(printings: dict[str, list[CardPrinting]], output: io.IOBase) -> None:
+    for set_code, cards in printings.items():
+        print(f"{set_code}:", file=output)
+        for card in cards:
+            print(f"  {card.name} #{card.collector_number} (${card.price_usd})", file=output)
+
+
+def _format_json(printings: dict[str, list[CardPrinting]], output: io.IOBase) -> None:
+    data = {
+        set_code: [card.model_dump() for card in cards]
+        for set_code, cards in printings.items()
+    }
+    print(json.dumps(data, indent=2), file=output)
+
+
+def _format_csv(printings: dict[str, list[CardPrinting]], output: io.IOBase) -> None:
+    writer = csv.writer(output)
+    writer.writerow(["set", "collector_number", "name", "price_usd"])
+    for set_code, cards in printings.items():
+        for card in cards:
+            writer.writerow([set_code, card.collector_number, card.name, card.price_usd])
+
+
+def _format_md(printings: dict[str, list[CardPrinting]], output: io.IOBase) -> None:
+    for set_code, cards in printings.items():
+        print(f"* {set_code}", file=output)
+        for card in cards:
+            print(f"  * {card.name}, {card.collector_number}, {card.price_usd}", file=output)
+
+
+_FORMATTERS = {
+    OutputFormat.TEXT: _format_text,
+    OutputFormat.JSON: _format_json,
+    OutputFormat.CSV: _format_csv,
+    OutputFormat.MD: _format_md,
+}
+
+
 def set_finder(args):
     """Find and display all sets containing each card in the input list.
 
@@ -76,10 +128,7 @@ def set_finder(args):
         output = sys.stdout
 
     try:
-        for set_code, cards in printings.items():
-            print(f"{set_code}:", file=output)
-            for card in cards:
-                print(f"  {card.name} #{card.collector_number} (${card.price_usd})", file=output)
+        _FORMATTERS[args.format](printings, output)
     finally:
         if args.output_file:
             output.close()
