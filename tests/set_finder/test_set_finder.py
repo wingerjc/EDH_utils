@@ -3,7 +3,7 @@ from argparse import Namespace
 from io import StringIO
 from unittest.mock import MagicMock, patch
 
-from edh_utils.set_finder.set_finder import CardPrinting, DEFAULT_LOCATION, OutputFormat, set_finder
+from edh_utils.set_finder.set_finder import CardPrinting, DEFAULT_LOCATION, OutputFormat, _sort_grouped, set_finder
 
 
 PRINTINGS = {
@@ -195,3 +195,32 @@ def test_settings_collection_used_when_cli_not_provided(mock_settings, mock_fetc
 def test_cli_collection_overrides_settings(mock_settings, mock_fetch, mock_collection, mock_read, mock_stdout):
     set_finder(make_args(collection="cli.json", settings="settings.toml"))
     mock_collection.assert_called_once_with("cli.json")
+
+
+# --- _sort_grouped ---
+
+UNSORTED_GROUPED = {
+    DEFAULT_LOCATION: {"lea": []},
+    "zebra": {"m21": []},
+    "alpha": {"znr": []},
+    "binder": {"eld": []},
+}
+
+
+def test_sort_grouped_alphanumeric_default_last():
+    result = _sort_grouped(UNSORTED_GROUPED)
+    assert list(result.keys()) == ["alpha", "binder", "zebra", DEFAULT_LOCATION]
+
+
+def test_sort_grouped_without_default_location():
+    grouped = {"zebra": {}, "alpha": {}, "binder": {}}
+    assert list(_sort_grouped(grouped).keys()) == ["alpha", "binder", "zebra"]
+
+
+def test_sort_grouped_only_default_location():
+    grouped = {DEFAULT_LOCATION: {}}
+    assert list(_sort_grouped(grouped).keys()) == [DEFAULT_LOCATION]
+
+
+def test_sort_grouped_empty():
+    assert _sort_grouped({}) == {}
