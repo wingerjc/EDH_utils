@@ -128,12 +128,22 @@ def fetch_card_printings(
     return grouped
 
 
+def _sort_grouped(
+    grouped: dict[str, dict[str, list[CardPrinting]]],
+) -> dict[str, dict[str, list[CardPrinting]]]:
+    """Return grouped with locations sorted alphanumerically, DEFAULT_LOCATION last."""
+    keys = sorted(k for k in grouped if k != DEFAULT_LOCATION)
+    if DEFAULT_LOCATION in grouped:
+        keys.append(DEFAULT_LOCATION)
+    return {k: grouped[k] for k in keys}
+
+
 def _format_text(
     grouped: dict[str, dict[str, list[CardPrinting]]],
     output: io.IOBase,
     price_levels: list[float],
 ) -> None:
-    for location, printings in grouped.items():
+    for location, printings in _sort_grouped(grouped).items():
         print(f"{location}:", file=output)
         for set_code, cards in printings.items():
             print(f"  {set_code}:", file=output)
@@ -177,7 +187,7 @@ def _format_md(
     output: io.IOBase,
     price_levels: list[float],
 ) -> None:
-    for location, printings in grouped.items():
+    for location, printings in _sort_grouped(grouped).items():
         print(f"* {location}", file=output)
         for set_code, cards in printings.items():
             print(f"  * {set_code}", file=output)
